@@ -1,49 +1,40 @@
 import random
 
-poblacion = []
-poblacion_decimal = []
 COEF = 2**30 - 1
+NUM_CROMOSOMAS = 10
+LONGITUD = 30
 
-for _ in range(10):
-    cromosoma = []
-    for _ in range(30):
-        gen = 1 if random.random() > 0.5 else 0
-        cromosoma.append(gen)
-    poblacion.append(cromosoma)
+def generar_poblacion(n, longitud):
+    poblacion = []
+    for _ in range(n):
+        cromosoma = [random.randint(0, 1) for _ in range(longitud)]
+        poblacion.append(cromosoma)
+    return poblacion
 
+def binario_a_entero(cromosoma):
+    return sum(gen * (2 ** (LONGITUD - 1 - i)) for i, gen in enumerate(cromosoma))
 
-for cromosoma in poblacion:
-    sum = 0
-    for indice, gen in enumerate(cromosoma):
-        if gen == 1:
-            sum += 2**(29-indice)
-    poblacion_decimal.append(sum)
+def evaluar_funcion_objetivo(valor):
+    return (valor / COEF) ** 2
 
-f_obj = []
+def calcular_fitness(valores_f_obj):
+    total = sum(valores_f_obj)
+    fitness = [y / total for y in valores_f_obj]
+    return fitness
 
-for cromosoma in poblacion_decimal:
-    y = (cromosoma / COEF)**2
-    f_obj.append(y)
+# Ejecución principal
+poblacion = generar_poblacion(NUM_CROMOSOMAS, LONGITUD)
+enteros = [binario_a_entero(x) for x in poblacion]
+f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
+fitness = calcular_fitness(f_obj)
 
-print("X | Y")
-for cromosoma_decimal, y in zip(poblacion_decimal, f_obj):
-    print(f"{cromosoma_decimal} | {y}")
+# Estadísticas
+print("Binario\t\t\t\tEntero\t\tf(x)\t\tFitness")
+for bin_crom, entero, fx, fit in zip(poblacion, enteros, f_obj, fitness):
+    bin_str = ''.join(str(bit) for bit in bin_crom)
+    print(f"{bin_str}\t{entero}\t{fx:.6f}\t{fit:.6f}")
 
-suma = 0
-for y in f_obj:
-    suma += y
-print("Suma de Y:", suma)
-print("Promedio de Y:", suma / len(f_obj))
-print("Máximo:", max(f_obj))
-
-fitness = []
-total = 0
-for y in f_obj:
-    fitness.append(y/suma)
-print("Fitness:")
-for y in fitness:
-    print(f"{y}")
-print("Suma de Fitness:")
-for y in fitness:
-    total += y
-print(total)
+print("\nSuma f(x):", sum(f_obj))
+print("Promedio f(x):", sum(f_obj) / len(f_obj))
+print("Máximo f(x):", max(f_obj))
+print("Suma fitness:", sum(fitness))
