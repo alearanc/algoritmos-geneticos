@@ -1,4 +1,5 @@
 import random
+import matplotlib.pyplot as plt
 
 # Parámetros del algoritmo
 COEF = 2**30 - 1
@@ -42,19 +43,24 @@ def mutar(cromosoma):
 # Programa principal
 poblacion = generar_poblacion(NUM_CROMOSOMAS, LONGITUD)
 
+# Para las gráficas
+maximos, minimos, promedios = [], [], []
+
 for generacion in range(GENERACIONES):
     enteros = [binario_a_entero(ind) for ind in poblacion]
     f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
 
-    # Estadísticas de la generación
     maximo = max(f_obj)
     minimo = min(f_obj)
     promedio = sum(f_obj) / len(f_obj)
 
+    maximos.append(maximo)
+    minimos.append(minimo)
+    promedios.append(promedio)
+
     print(f"\nGeneración {generacion+1}")
     print(f"Máximo: {maximo:.6f}, Mínimo: {minimo:.6f}, Promedio: {promedio:.6f}")
 
-    # Selección + reproducción
     nueva_poblacion = []
     while len(nueva_poblacion) < NUM_CROMOSOMAS:
         i1 = torneo_seleccion(f_obj)
@@ -83,3 +89,14 @@ print("\nMejor solución final:")
 print("Cromosoma:", ''.join(map(str, mejor_cromosoma)))
 print("Entero:", mejor_entero)
 print("f(x):", mejor_fx)
+
+# Gráfica
+plt.plot(maximos, label='Máximo')
+plt.plot(minimos, label='Mínimo')
+plt.plot(promedios, label='Promedio')
+plt.xlabel("Generación")
+plt.ylabel("f(x)")
+plt.title("Evolución de f(x) con Selección por Torneo")
+plt.legend()
+plt.grid(True)
+plt.show()
