@@ -1,4 +1,6 @@
 import random
+import matplotlib.pyplot as plt
+import pandas as pd
 
 COEF = 2**30 - 1
 NUM_CROMOSOMAS = 10
@@ -77,121 +79,228 @@ def obtener_estadisticas_poblacion(poblacion):
     peor_fitness = min(f_obj)
     fitness_promedio = sum(f_obj) / len(f_obj)
 
-    mejor_idx = f_obj.index[mejor_fitness]
+    mejor_idx = f_obj.index(mejor_fitness)
     mejor_cromosoma = poblacion[mejor_idx]
     mejor_valor = enteros[mejor_idx]
 
     return {
-        'mejor fitness': mejor_fitness,
-        'peor fitness': peor_fitness,
-        'fitness promedio': fitness_promedio,
-        'mejor cromosoma': mejor_cromosoma,
-        'mejor valor': mejor_valor
+        'mejor_fitness': mejor_fitness,
+        'peor_fitness': peor_fitness,
+        'fitness_promedio': fitness_promedio,
+        'mejor_cromosoma': mejor_cromosoma,
+        'mejor_valor': mejor_valor
     }
 
 
-def mostrar_poblacion(poblacion, titulo = "Población"):
-    print(f"\n{titulo}:")
-    for i, cromosoma in enumerate(poblacion):
-        entero = binario_a_entero(cromosoma)
-        f_obj = evaluar_funcion_objetivo(entero)
-        print(f" Cromosoma {i+1}: {cromosoma} -> {entero} -> f(x) = {f_obj:.6f}")
+def evolucionar_generacion(poblacion):
+    enteros = [binario_a_entero(x) for x in poblacion]
+    f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
+    fitness_valores = calcular_fitness(f_obj)
+    prob_acumuladas = calcular_prob_acumuladas(fitness_valores)
 
-# Ejecución principal
-print(f"="*60)
-print("ALGORITMO GENÉTICO - UNA ITERACIÓN COMPLETA")
-print("="*60)
+    nueva_poblacion = []
+    for _ in range(NUM_CROMOSOMAS // 2):
+        padre1_idx = ruleta_seleccion(prob_acumuladas)
+        padre2_idx = ruleta_seleccion(prob_acumuladas)
 
-print(f"Parámetros:")
-print(f" - Población: {NUM_CROMOSOMAS} cromosomas")
-print(f" - Longitud cromosoma: {LONGITUD} bits")
-print(f" - Prob. crossover: {PROBABILIDAD_CROSSOVER}")
-print(f" - Prob. mutación: {PROBABILIDAD_MUTACION}")
-print(f" - Coeficiente: {COEF}")
+        padre1 = poblacion[padre1_idx]
+        padre2 = poblacion[padre2_idx]
 
-# Generar población inicial
-print(f"\n1. GENERACIÓN DE LA POBLACIÓN INICIAL")
-poblacion = generar_poblacion(NUM_CROMOSOMAS, LONGITUD)
-mostrar_poblacion(poblacion, "Población inicial")
+        # Crossover
+        hijo1, hijo2, _, _ = crossover(padre1, padre2, PROBABILIDAD_CROSSOVER)
 
-# Evaluar fitness
-print(f"\n2. EVALUACIÓN DE FITNESS")
-enteros = [binario_a_entero(x) for x in poblacion]
-f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
-fitness_valores = calcular_fitness(f_obj)
+        # Mutación
+        hijo1_final, hijo2_final, _ = mutacion(hijo1, hijo2, PROBABILIDAD_MUTACION)
 
-print("Valores de fitness:")
-for i, (entero, obj, fitness) in enumerate(zip(enteros, f_obj, fitness_valores)):
-    print(f" Cromosoma {i+1}: valor={entero}, f(x)={obj:.6f}, fitness={fitness:.4f}")
+        nueva_poblacion.extend([hijo1_final, hijo2_final])
 
-# Calcular probabilidades acumuladas
-prob_acumuladas = calcular_prob_acumuladas(fitness_valores)
-print(f"\nProbabilidades acumuladas: {[round(p, 4) for p in prob_acumuladas]}")
+    return nueva_poblacion
 
-# Selección de padres
-print("\n3. SELECCIÓN DE PADRES")
-pares_de_padres = []
-for i in range(NUM_CROMOSOMAS // 2): # 5 pares para 10 cromosomas
-    padre1_idx = ruleta_seleccion(prob_acumuladas)
-    padre2_idx = ruleta_seleccion(prob_acumuladas)
-    pares_de_padres.append([padre1_idx, padre2_idx])
-    print(f" Par {i+1}: Padre1 = Cromosoma {padre1_idx+1}, Padre2 = Cromosoma {padre2_idx}")
+def ejecutar_algoritmo_genetico(num_generaciones):
+    """Ejecuta el algoritmo genético por N generaciones"""
+    print(f"="*80)
+    print(f"AG CANÓNICO - {num_generaciones} GENERACIONES")
+    print(f"="*80)
 
-# Crossover y Mutación
-print(f"\n4. CROSSOVER Y MUTACIÓN")
-nueva_poblacion = []
-for i, (padre1_idx, padre2_idx) in enumerate(pares_de_padres):
-    padre1 = poblacion[padre1_idx]
-    padre2 = poblacion[padre2_idx]
+    print(f"Parámetros:")
+    print(f" - Población: {NUM_CROMOSOMAS} cromosomas")
+    print(f" - Longitud cromosoma: {LONGITUD} bits")
+    print(f" - Prob. crossover: {PROBABILIDAD_CROSSOVER}")
+    print(f" - Prob. mutación: {PROBABILIDAD_MUTACION}")
+    print(f" - Generaciones: {num_generaciones}")
+    print(f" - Coeficiente: {COEF}")
 
-    print(f"\n  Par {i+1}:")
-    print(f"    Padre1: {padre1}")
-    print(f"    Padre2: {padre2}")
+    # Inicializa población
+    poblacion = generar_poblacion(NUM_CROMOSOMAS, LONGITUD)
 
-    # Crossover
-    hijo1, hijo2, hubo_crossover, punto_corte = crossover(padre1, padre2, PROBABILIDAD_CROSSOVER)
-    if hubo_crossover:
-        print(f"    CROSSOVER en punto {punto_corte}")
+    # Listas para almacenar estadísticas
+    estadisticas = {
+        'generacion': [],
+        'mejor_fitness': [],
+        'peor_fitness': [],
+        'fitness_promedio': []
+    }
+
+    mejor_fitness_global = 0
+    mejor_cromosoma_global = None
+    mejor_valor_global = 0
+    mejor_generacion_global = 0
+
+    # Ejecuta generaciones
+    for gen in range(num_generaciones):
+        stats = obtener_estadisticas_poblacion(poblacion)
+
+        # Guarda estadísticas
+        estadisticas['generacion'].append(gen + 1)
+        estadisticas['mejor_fitness'].append(stats['mejor_fitness'])
+        estadisticas['peor_fitness'].append(stats['peor_fitness'])
+        estadisticas['fitness_promedio'].append(stats['fitness_promedio'])
+
+        if stats['mejor_fitness'] > mejor_fitness_global:
+            mejor_fitness_global = stats['mejor_fitness']
+            mejor_cromosoma_global = stats['mejor_cromosoma'].copy()
+            mejor_valor_global = stats['mejor_valor']
+            mejor_generacion_global = gen + 1
+
+        if gen < num_generaciones - 1:
+            poblacion = evolucionar_generacion(poblacion)
+    return estadisticas, mejor_fitness_global, mejor_cromosoma_global, mejor_valor_global, mejor_generacion_global
+
+def mostrar_tabla_estadisticas(estadisticas, num_generaciones):
+    """Muestra tabla con estadísticas por generación"""
+    print(f"\n{'='*80}")
+    print("TABLA DE ESTADÍSTICAS POR GENERACIÓN")
+    print("="*80)
+
+    df = pd.DataFrame(estadisticas)
+
+    # Muestra tabla completa para generaciones pequeñas
+    # Muestra resumida para grandes generaciones
+    if num_generaciones <= 20:
+        print(df.to_string(index=False, float_format='%.6f'))
     else:
-        print(f"    NO hubo crossover")
-    print(f"    Hijo1 (post-crossover): {hijo1}")
-    print(f"    Hijo2 (post-crossover): {hijo2}")
+        # Muestra primeras 10, últimas 10 y algunas intermedias
+        print("Primeras 10 generaciones:")
+        print(df.head(10).to_string(index=False, float_format='%.6f'))
 
-    # Mutación
-    hijo1_final, hijo2_final, hubo_mutacion = mutacion(hijo1, hijo2, PROBABILIDAD_MUTACION)
-    if hubo_mutacion:
-        print(f"    MUTACIÓN aplicada")
-    else:
-        print(f"    NO hubo mutación")
+        if num_generaciones > 40:
+            print(f"\n... (generaciones intermedias omitidas) ...\n")
 
-    nueva_poblacion.extend([hijo1_final, hijo2_final])
+            # Generaciones intermedias
+            medio_inicio = num_generaciones // 2 - 2
+            medio_fin = num_generaciones // 2 + 3
+            print(f"Generaciones ({medio_inicio}-{medio_fin}:")
+            print(df.iloc[medio_inicio-1:medio_fin].to_string(index=False, float_format='%.6f'))
 
-# 6. Mostrar nueva población
-print("\n5. NUEVA POBLACIÓN GENERADA")
-mostrar_poblacion(nueva_poblacion, "Nueva población")
+        print(f"\nÚltimas 10 generaciones:")
+        print(df.tail(10).to_string(index=False, float_format='%.6f'))
 
-# 7. Comparar fitness
-print("\n6. COMPARACIÓN DE FITNESS")
-nuevos_enteros = [binario_a_entero(x) for x in nueva_poblacion]
-nuevos_f_obj = [evaluar_funcion_objetivo(x) for x in nuevos_enteros]
+def generar_graficas(estadisticas, num_generaciones):
+    """Genera gráficas de evolución del fitness"""
+    plt.figure(figsize=(15, 10))
 
-print("Población original:")
-mejor_original = max(f_obj)
-idx_mejor_original = f_obj.index(mejor_original)
-print(f"  Mejor fitness: {mejor_original:.6f} (Cromosoma {idx_mejor_original+1})")
+    # Gráfica 1: Evolución del fitness
+    plt.subplot(2, 2, 1)
+    plt.plot(estadisticas['generacion'], estadisticas['mejor_fitness'], 
+             'g-', linewidth=2, label='Mejor Fitness')
+    plt.plot(estadisticas['generacion'], estadisticas['fitness_promedio'], 
+             'b-', linewidth=2, label='Fitness Promedio')
+    plt.plot(estadisticas['generacion'], estadisticas['peor_fitness'], 
+             'r-', linewidth=2, label='Peor Fitness')
+    plt.xlabel('Generación')
+    plt.ylabel('Fitness')
+    plt.title(f'Evolución del Fitness ({num_generaciones} generaciones)')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
 
-print("Nueva población:")
-mejor_nuevo = max(nuevos_f_obj)
-idx_mejor_nuevo = nuevos_f_obj.index(mejor_nuevo)
-print(f"  Mejor fitness: {mejor_nuevo:.6f} (Cromosoma {idx_mejor_nuevo+1})")
+    # Gráfica 2: Solo mejor fitness
+    plt.subplot(2, 2, 2)
+    plt.plot(estadisticas['generacion'], estadisticas['mejor_fitness'], 
+             'g-', linewidth=2, marker='o', markersize=3)
+    plt.xlabel('Generación')
+    plt.ylabel('Mejor Fitness')
+    plt.title('Evolución del Mejor Fitness')
+    plt.grid(True, alpha=0.3)
+    
+    # Gráfica 3: Diferencia entre mejor y peor
+    diferencias = [mejor - peor for mejor, peor in 
+                   zip(estadisticas['mejor_fitness'], estadisticas['peor_fitness'])]
+    plt.subplot(2, 2, 3)
+    plt.plot(estadisticas['generacion'], diferencias, 
+             'm-', linewidth=2)
+    plt.xlabel('Generación')
+    plt.ylabel('Diferencia (Mejor - Peor)')
+    plt.title('Diversidad de la Población')
+    plt.grid(True, alpha=0.3)
 
-if mejor_nuevo > mejor_original:
-    print("  ¡MEJORA! La nueva población tiene mejor fitness.")
-elif mejor_nuevo == mejor_original:
-    print("  IGUAL. El fitness se mantiene.")
-else:
-    print("  DETERIORO. El fitness empeoró (normal en AG).")
+    # Gráfica 4: Distribución final vs inicial
+    plt.subplot(2, 2, 4)
+    generaciones_muestra = [1, num_generaciones//4, num_generaciones//2, 
+                           3*num_generaciones//4, num_generaciones]
+    fitness_muestra = [estadisticas['mejor_fitness'][gen-1] for gen in generaciones_muestra if gen <= len(estadisticas['mejor_fitness'])]
+    generaciones_muestra = generaciones_muestra[:len(fitness_muestra)]
+    
+    plt.bar(range(len(generaciones_muestra)), fitness_muestra, 
+            color=['red', 'orange', 'yellow', 'lightgreen', 'green'][:len(fitness_muestra)])
+    plt.xlabel('Momento de la Evolución')
+    plt.ylabel('Mejor Fitness')
+    plt.title('Mejor Fitness en Diferentes Momentos')
+    plt.xticks(range(len(generaciones_muestra)), 
+               [f'Gen {gen}' for gen in generaciones_muestra])
+    plt.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.show()
 
-print("\n" + "="*60)
-print("ITERACIÓN COMPLETA FINALIZADA")
-print("="*60)
+def mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion):
+    """Muestra información del mejor cromosoma encontrado"""
+    print(f"\n{'='*80}")
+    print("MEJOR CROMOSOMA ENCONTRADO")
+    print("="*80)
+    
+    print(f"Generación donde se encontró: {mejor_generacion}")
+    print(f"Cromosoma: {mejor_cromosoma}")
+    print(f"Valor decimal: {mejor_valor}")
+    print(f"Valor normalizado: {mejor_valor / COEF:.10f}")
+    print(f"Fitness: {mejor_fitness:.10f}")
+    print(f"Función objetivo f(x) = (x/{COEF})² = {mejor_fitness:.10f}")
+
+def main():
+    """Función principal que ejecuta el algoritmo para diferentes números de generaciones"""
+    generaciones_a_probar = [20, 100, 200]
+
+    for num_gen in generaciones_a_probar:
+        print(f"\n\n{'#'*100}")
+        print(f"EJECUTANDO ALGORITMO GENÉTICO CON {num_gen} GENERACIONES")
+        print(f"{'#'*100}")
+        
+        # Ejecutar algoritmo
+        # estadisticas, mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion = ejecutar_algoritmo_genetico(num_gen)
+        estadisticas, mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion = ejecutar_algoritmo_genetico(num_gen)
+        
+
+        # Mostrar tabla de estadísticas
+        mostrar_tabla_estadisticas(estadisticas, num_gen)
+        
+        # Mostrar mejor cromosoma
+        mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion)
+        
+        # Generar gráficas
+        print(f"\nGenerando gráficas para {num_gen} generaciones...")
+        generar_graficas(estadisticas, num_gen)
+        
+        # Pausa entre ejecuciones (opcional)
+        if num_gen != generaciones_a_probar[-1]:
+            input(f"\nPresiona Enter para continuar con la siguiente prueba...")
+
+if __name__ == "__main__":
+# Puedes ejecutar una sola vez o todas las pruebas
+    # Para una sola ejecución, descomenta la siguiente línea y especifica el número de generaciones:
+    # estadisticas, mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion = ejecutar_algoritmo_genetico(20)
+        
+    # mostrar_tabla_estadisticas(estadisticas, 20)
+    # mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion)
+    # generar_graficas(estadisticas, 20)
+    
+    # Para ejecutar todas las pruebas (20, 100, 200 generaciones):
+    main()
