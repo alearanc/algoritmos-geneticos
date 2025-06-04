@@ -53,7 +53,7 @@ def mutacion(cromosoma, probabilidad):
     return cromosoma_copia, hubo_mutacion
 
 def obtener_mejor_individuo(poblacion, f_obj):
-    """Obtiene el mejor individuo de la población (para elitismo)"""
+    """Obtiene el mejor individuo de la población (para estadísticas)"""
     mejor_idx = f_obj.index(max(f_obj))
     return poblacion[mejor_idx][:], f_obj[mejor_idx], mejor_idx
 
@@ -80,13 +80,10 @@ def obtener_estadisticas_poblacion(poblacion):
 def evolucionar_generacion(poblacion):
     enteros = [binario_a_entero(x) for x in poblacion]
     f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
-    
-    # Elitismo: guardar el mejor individuo
-    mejor_individuo, _, _ = obtener_mejor_individuo(poblacion, f_obj)
-    
-    nueva_poblacion = [mejor_individuo]  # Añadir el mejor individuo sin alteraciones
 
-    # Generar el resto de la población (NUM_CROMOSOMAS - 1 individuos)
+    nueva_poblacion = []
+
+    # Generar toda la población
     while len(nueva_poblacion) < NUM_CROMOSOMAS:
         # Selección por torneo
         padre1_idx = torneo_seleccion(poblacion, f_obj)
@@ -124,7 +121,6 @@ def ejecutar_algoritmo_genetico(num_generaciones):
     print(f" - Generaciones: {num_generaciones}")
     print(f" - Coeficiente: {COEF}")
     print(f" - Selección: Torneo (k=2)")
-    print(f" - Elitismo: Activado")
 
     # Inicializa población
     poblacion = generar_poblacion(NUM_CROMOSOMAS, LONGITUD)
@@ -254,9 +250,6 @@ def exportar_estadisticas_excel(todas_estadisticas, directorio):
         }, {
             'Parametro': 'Metodo_Crossover',
             'Valor': '1 Punto'
-        }, {
-            'Parametro': 'Elitismo',
-            'Valor': 'Activado'
         }, {
             'Parametro': 'Mutacion',
             'Valor': '1 bit aleatorio por cromosoma'
