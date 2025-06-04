@@ -1,6 +1,8 @@
 import random
 import matplotlib.pyplot as plt
 import pandas as pd
+from datetime import datetime
+import os
 
 COEF = 2**30 - 1
 NUM_CROMOSOMAS = 10
@@ -91,7 +93,6 @@ def obtener_estadisticas_poblacion(poblacion):
         'mejor_valor': mejor_valor
     }
 
-
 def evolucionar_generacion(poblacion):
     enteros = [binario_a_entero(x) for x in poblacion]
     f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
@@ -164,7 +165,104 @@ def ejecutar_algoritmo_genetico(num_generaciones):
 
         if gen < num_generaciones - 1:
             poblacion = evolucionar_generacion(poblacion)
+    
     return estadisticas, mejor_fitness_global, mejor_cromosoma_global, mejor_valor_global, mejor_generacion_global
+
+def crear_directorio_resultados():
+    """Crea directorio para almacenar resultados si no existe"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    directorio = f"resultados_AG_{timestamp}"
+    
+    if not os.path.exists(directorio):
+        os.makedirs(directorio)
+    
+    return directorio
+
+def exportar_estadisticas_csv(estadisticas, num_generaciones, directorio, mejor_cromosoma_info):
+    """Exporta estadísticas a archivo CSV"""
+    filename = f"{directorio}/estadisticas_{num_generaciones}_generaciones.csv"
+    
+    df = pd.DataFrame(estadisticas)
+    df.to_csv(filename, index=False, float_format='%.10f')
+    
+    # Archivo adicional con información del mejor cromosoma
+    mejor_info_filename = f"{directorio}/mejor_cromosoma_{num_generaciones}_generaciones.csv"
+    mejor_df = pd.DataFrame([{
+        'Generaciones_Ejecutadas': num_generaciones,
+        'Mejor_Generacion': mejor_cromosoma_info['mejor_generacion'],
+        'Mejor_Fitness': mejor_cromosoma_info['mejor_fitness'],
+        'Mejor_Valor_Decimal': mejor_cromosoma_info['mejor_valor'],
+        'Mejor_Valor_Normalizado': mejor_cromosoma_info['mejor_valor'] / COEF,
+        'Mejor_Cromosoma': ''.join(map(str, mejor_cromosoma_info['mejor_cromosoma']))
+    }])
+    mejor_df.to_csv(mejor_info_filename, index=False, float_format='%.10f')
+    
+    print(f"✓ Estadísticas exportadas a: {filename}")
+    print(f"✓ Mejor cromosoma exportado a: {mejor_info_filename}")
+
+def exportar_estadisticas_excel(todas_estadisticas, directorio):
+    """Exporta todas las estadísticas a un archivo Excel con múltiples hojas"""
+    filename = f"{directorio}/estadisticas_completas.xlsx"
+    
+    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+        # Hoja de resumen
+        resumen_data = []
+        for generaciones, data in todas_estadisticas.items():
+            estadisticas = data['estadisticas']
+            mejor_info = data['mejor_info']
+            
+            resumen_data.append({
+                'Generaciones': generaciones,
+                'Mejor_Fitness_Final': estadisticas['mejor_fitness'][-1],
+                'Peor_Fitness_Final': estadisticas['peor_fitness'][-1],
+                'Fitness_Promedio_Final': estadisticas['fitness_promedio'][-1],
+                'Mejor_Fitness_Global': mejor_info['mejor_fitness'],
+                'Mejor_Generacion_Global': mejor_info['mejor_generacion'],
+                'Mejor_Valor_Decimal': mejor_info['mejor_valor'],
+                'Mejor_Cromosoma': ''.join(map(str, mejor_info['mejor_cromosoma']))
+            })
+        
+        resumen_df = pd.DataFrame(resumen_data)
+        resumen_df.to_excel(writer, sheet_name='Resumen_General', index=False)
+        
+        # Hoja para cada configuración de generaciones
+        for generaciones, data in todas_estadisticas.items():
+            estadisticas_df = pd.DataFrame(data['estadisticas'])
+            sheet_name = f'Estadisticas_{generaciones}gen'
+            estadisticas_df.to_excel(writer, sheet_name=sheet_name, index=False)
+        
+        # Hoja de parámetros utilizados
+        parametros_df = pd.DataFrame([{
+            'Parametro': 'Numero_Cromosomas',
+            'Valor': NUM_CROMOSOMAS
+        }, {
+            'Parametro': 'Longitud_Cromosoma',
+            'Valor': LONGITUD
+        }, {
+            'Parametro': 'Probabilidad_Crossover',
+            'Valor': PROBABILIDAD_CROSSOVER
+        }, {
+            'Parametro': 'Probabilidad_Mutacion',
+            'Valor': PROBABILIDAD_MUTACION
+        }, {
+            'Parametro': 'Coeficiente',
+            'Valor': COEF
+        }, {
+            'Parametro': 'Funcion_Objetivo',
+            'Valor': 'f(x) = (x/coef)²'
+        }, {
+            'Parametro': 'Dominio',
+            'Valor': f'[0, {COEF}]'
+        }, {
+            'Parametro': 'Metodo_Seleccion',
+            'Valor': 'Ruleta'
+        }, {
+            'Parametro': 'Metodo_Crossover',
+            'Valor': '1 Punto'
+        }])
+        parametros_df.to_excel(writer, sheet_name='Parametros', index=False)
+    
+    print(f"✓ Archivo Excel completo exportado a: {filename}")
 
 def mostrar_tabla_estadisticas(estadisticas, num_generaciones):
     """Muestra tabla con estadísticas por generación"""
@@ -189,14 +287,14 @@ def mostrar_tabla_estadisticas(estadisticas, num_generaciones):
             # Generaciones intermedias
             medio_inicio = num_generaciones // 2 - 2
             medio_fin = num_generaciones // 2 + 3
-            print(f"Generaciones ({medio_inicio}-{medio_fin}:")
+            print(f"Generaciones ({medio_inicio}-{medio_fin}):")
             print(df.iloc[medio_inicio-1:medio_fin].to_string(index=False, float_format='%.6f'))
 
         print(f"\nÚltimas 10 generaciones:")
         print(df.tail(10).to_string(index=False, float_format='%.6f'))
 
-def generar_graficas(estadisticas, num_generaciones):
-    """Genera gráficas de evolución del fitness"""
+def generar_graficas(estadisticas, num_generaciones, directorio):
+    """Genera gráficas de evolución del fitness y las guarda"""
     plt.figure(figsize=(15, 10))
 
     # Gráfica 1: Evolución del fitness
@@ -250,7 +348,11 @@ def generar_graficas(estadisticas, num_generaciones):
     plt.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.show()
+    
+    # Guarda la gráfica
+    grafica_filename = f"{directorio}/graficas_{num_generaciones}_generaciones.png"
+    plt.savefig(grafica_filename, dpi=300, bbox_inches='tight')
+    print(f"✓ Gráficas guardadas en: {grafica_filename}")
 
 def mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion):
     """Muestra información del mejor cromosoma encontrado"""
@@ -268,6 +370,11 @@ def mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_g
 def main():
     """Función principal que ejecuta el algoritmo para diferentes números de generaciones"""
     generaciones_a_probar = [20, 100, 200]
+    todas_estadisticas = {}
+    
+    # Crear directorio para resultados
+    directorio = crear_directorio_resultados()
+    print(f"📁 Resultados se guardarán en: {directorio}")
 
     for num_gen in generaciones_a_probar:
         print(f"\n\n{'#'*100}")
@@ -275,32 +382,63 @@ def main():
         print(f"{'#'*100}")
         
         # Ejecutar algoritmo
-        # estadisticas, mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion = ejecutar_algoritmo_genetico(num_gen)
         estadisticas, mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion = ejecutar_algoritmo_genetico(num_gen)
         
-
+        # Almacenar para el archivo Excel
+        todas_estadisticas[num_gen] = {
+            'estadisticas': estadisticas,
+            'mejor_info': {
+                'mejor_fitness': mejor_fitness,
+                'mejor_cromosoma': mejor_cromosoma,
+                'mejor_valor': mejor_valor,
+                'mejor_generacion': mejor_generacion
+            }
+        }
+        
         # Mostrar tabla de estadísticas
         mostrar_tabla_estadisticas(estadisticas, num_gen)
         
         # Mostrar mejor cromosoma
         mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion)
         
-        # Generar gráficas
+        # Exportar estadísticas a CSV
+        mejor_cromosoma_info = {
+            'mejor_fitness': mejor_fitness,
+            'mejor_cromosoma': mejor_cromosoma,
+            'mejor_valor': mejor_valor,
+            'mejor_generacion': mejor_generacion
+        }
+        exportar_estadisticas_csv(estadisticas, num_gen, directorio, mejor_cromosoma_info)
+        
+        # Generar y guardar gráficas
         print(f"\nGenerando gráficas para {num_gen} generaciones...")
-        generar_graficas(estadisticas, num_gen)
+        generar_graficas(estadisticas, num_gen, directorio)
         
         # Pausa entre ejecuciones (opcional)
         if num_gen != generaciones_a_probar[-1]:
             input(f"\nPresiona Enter para continuar con la siguiente prueba...")
+    
+    # Exportar archivo Excel completo con todas las estadísticas
+    print(f"\n{'='*80}")
+    print("EXPORTANDO ARCHIVO EXCEL COMPLETO")
+    print("="*80)
+    exportar_estadisticas_excel(todas_estadisticas, directorio)
+    
+    print(f"\n🎉 PROCESO COMPLETADO")
+    print(f"📊 Todos los archivos de resultados están en: {directorio}")
+    print(f"   - Archivos CSV individuales por cada configuración")
+    print(f"   - Archivo Excel completo con todas las estadísticas")
+    print(f"   - Gráficas en formato PNG")
 
 if __name__ == "__main__":
-# Puedes ejecutar una sola vez o todas las pruebas
-    # Para una sola ejecución, descomenta la siguiente línea y especifica el número de generaciones:
-    # estadisticas, mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion = ejecutar_algoritmo_genetico(20)
-        
-    # mostrar_tabla_estadisticas(estadisticas, 20)
-    # mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion)
-    # generar_graficas(estadisticas, 20)
-    
     # Para ejecutar todas las pruebas (20, 100, 200 generaciones):
     main()
+    
+    # Para una sola ejecución (descomentar):
+    # directorio = crear_directorio_resultados()
+    # estadisticas, mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion = ejecutar_algoritmo_genetico(20)
+    # mostrar_tabla_estadisticas(estadisticas, 20)
+    # mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion)
+    # mejor_cromosoma_info = {'mejor_fitness': mejor_fitness, 'mejor_cromosoma': mejor_cromosoma, 'mejor_valor': mejor_valor, 'mejor_generacion': mejor_generacion}
+    # exportar_estadisticas_csv(estadisticas, 20, directorio, mejor_cromosoma_info)
+    # generar_graficas(estadisticas, 20, directorio)
