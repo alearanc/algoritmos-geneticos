@@ -85,15 +85,7 @@ def mutacion(hijo1, hijo2, probabilidad):
 
 def seleccionar_elite(poblacion, elite_size):
     """
-    Selecciona los mejores cromosomas (élite) basado en su fitness.
-    
-    Args:
-        poblacion: Lista de cromosomas
-        elite_size: Número de individuos a seleccionar para la élite
-    
-    Returns:
-        elite: Lista con los mejores cromosomas
-        indices_elite: Índices de los cromosomas élite en la población original
+    Selecciona los mejores cromosomas (élite) basado en su fitness
     """
     # Calcular fitness de toda la población
     enteros = [binario_a_entero(x) for x in poblacion]
@@ -134,21 +126,7 @@ def obtener_estadisticas_poblacion(poblacion):
     }
 
 def evolucionar_generacion_con_elitismo(poblacion, elite_size):
-    """
-    Evoluciona una generación aplicando elitismo.
-    
-    Proceso:
-    1. Selecciona élite (mejores cromosomas) y los copia directamente
-    2. Para el resto de la población, aplica selección por ruleta, crossover y mutación
-    3. Combina élite + nuevos individuos = nueva población
-    
-    Args:
-        poblacion: Población actual
-        elite_size: Tamaño de la élite
-    
-    Returns:
-        nueva_poblacion: Nueva población con elitismo aplicado
-    """
+    """Evoluciona una generación aplicando elitismo."""
     # Paso 1: Seleccionar élite
     elite, indices_elite = seleccionar_elite(poblacion, elite_size)
     
@@ -200,34 +178,7 @@ def evolucionar_generacion_con_elitismo(poblacion, elite_size):
     return nueva_poblacion
 
 def ejecutar_algoritmo_genetico_elitismo(num_generaciones, elite_size):
-    """
-    Ejecuta el algoritmo genético con elitismo por N generaciones.
-    
-    Args:
-        num_generaciones: Número de generaciones a ejecutar
-        elite_size: Tamaño de la élite (individuos que pasan sin modificación)
-    
-    Returns:
-        estadisticas: Diccionario con estadísticas por generación
-        mejor_fitness_global: Mejor fitness encontrado
-        mejor_cromosoma_global: Mejor cromosoma encontrado
-        mejor_valor_global: Valor decimal del mejor cromosoma
-        mejor_generacion_global: Generación donde se encontró el mejor
-    """
-    print(f"="*80)
-    print(f"AG CON ELITISMO - {num_generaciones} GENERACIONES")
-    print(f"="*80)
-
-    print(f"Parámetros:")
-    print(f" - Población: {NUM_CROMOSOMAS} cromosomas")
-    print(f" - Élite: {elite_size} cromosomas")
-    print(f" - Nuevos por generación: {NUM_CROMOSOMAS - elite_size} cromosomas")
-    print(f" - Longitud cromosoma: {LONGITUD} bits")
-    print(f" - Prob. crossover: {PROBABILIDAD_CROSSOVER}")
-    print(f" - Prob. mutación: {PROBABILIDAD_MUTACION}")
-    print(f" - Generaciones: {num_generaciones}")
-    print(f" - Coeficiente: {COEF}")
-
+    """Ejecuta el algoritmo genético con elitismo por N generaciones"""
     # Inicializa población
     poblacion = generar_poblacion(NUM_CROMOSOMAS, LONGITUD)
 
@@ -270,64 +221,12 @@ def ejecutar_algoritmo_genetico_elitismo(num_generaciones, elite_size):
 def crear_directorio_resultados():
     """Crea directorio para almacenar resultados si no existe"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    directorio = f"resultados_AG_elitismo_{timestamp}"
+    directorio = f"resultados_AG_ruleta_elitismo_{timestamp}"
     
     if not os.path.exists(directorio):
         os.makedirs(directorio)
     
     return directorio
-
-def exportar_estadisticas_csv(estadisticas, num_generaciones, directorio, mejor_cromosoma_info, elite_size):
-    """Exporta estadísticas a archivo CSV"""
-    filename = f"{directorio}/estadisticas_elitismo_{num_generaciones}_gen_elite{elite_size}.csv"
-    
-    df = pd.DataFrame(estadisticas)
-    df.to_csv(filename, index=False, float_format='%.10f')
-    
-    # Archivo adicional con información del mejor cromosoma
-    mejor_info_filename = f"{directorio}/mejor_cromosoma_elitismo_{num_generaciones}_gen_elite{elite_size}.csv"
-    mejor_df = pd.DataFrame([{
-        'Generaciones_Ejecutadas': num_generaciones,
-        'Elite_Size': elite_size,
-        'Mejor_Generacion': mejor_cromosoma_info['mejor_generacion'],
-        'Mejor_Fitness': mejor_cromosoma_info['mejor_fitness'],
-        'Mejor_Valor_Decimal': mejor_cromosoma_info['mejor_valor'],
-        'Mejor_Valor_Normalizado': mejor_cromosoma_info['mejor_valor'] / COEF,
-        'Mejor_Cromosoma': ''.join(map(str, mejor_cromosoma_info['mejor_cromosoma']))
-    }])
-    mejor_df.to_csv(mejor_info_filename, index=False, float_format='%.10f')
-    
-    print(f"✓ Estadísticas exportadas a: {filename}")
-    print(f"✓ Mejor cromosoma exportado a: {mejor_info_filename}")
-
-def mostrar_tabla_estadisticas(estadisticas, num_generaciones):
-    """Muestra tabla con estadísticas por generación"""
-    print(f"\n{'='*80}")
-    print("TABLA DE ESTADÍSTICAS POR GENERACIÓN (CON ELITISMO)")
-    print("="*80)
-
-    df = pd.DataFrame(estadisticas)
-
-    # Muestra tabla completa para generaciones pequeñas
-    # Muestra resumida para grandes generaciones
-    if num_generaciones <= 20:
-        print(df.to_string(index=False, float_format='%.6f'))
-    else:
-        # Muestra primeras 10, últimas 10 y algunas intermedias
-        print("Primeras 10 generaciones:")
-        print(df.head(10).to_string(index=False, float_format='%.6f'))
-
-        if num_generaciones > 40:
-            print(f"\n... (generaciones intermedias omitidas) ...\n")
-
-            # Generaciones intermedias
-            medio_inicio = num_generaciones // 2 - 2
-            medio_fin = num_generaciones // 2 + 3
-            print(f"Generaciones ({medio_inicio}-{medio_fin}):")
-            print(df.iloc[medio_inicio-1:medio_fin].to_string(index=False, float_format='%.6f'))
-
-        print(f"\nÚltimas 10 generaciones:")
-        print(df.tail(10).to_string(index=False, float_format='%.6f'))
 
 def generar_graficas_elitismo(estadisticas, num_generaciones, directorio, elite_size):
     """Genera gráficas de evolución del fitness con elitismo y las guarda"""
@@ -382,156 +281,156 @@ def generar_graficas_elitismo(estadisticas, num_generaciones, directorio, elite_
     plt.tight_layout()
     
     # Guarda la gráfica
-    grafica_filename = f"{directorio}/graficas_elitismo_{num_generaciones}_gen_elite{elite_size}.png"
+    grafica_filename = f"{directorio}/graficas_ruleta_elitismo_{num_generaciones}_gen_elite{elite_size}.png"
     plt.savefig(grafica_filename, dpi=300, bbox_inches='tight')
     print(f"✓ Gráficas guardadas en: {grafica_filename}")
-
-def mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion):
-    """Muestra información del mejor cromosoma encontrado"""
-    print(f"\n{'='*80}")
-    print("MEJOR CROMOSOMA ENCONTRADO (CON ELITISMO)")
-    print("="*80)
+    plt.close()
     
-    print(f"Generación donde se encontró: {mejor_generacion}")
-    print(f"Cromosoma: {mejor_cromosoma}")
-    print(f"Valor decimal: {mejor_valor}")
-    print(f"Valor normalizado: {mejor_valor / COEF:.10f}")
-    print(f"Fitness: {mejor_fitness:.10f}")
-    print(f"Función objetivo f(x) = (x/{COEF})² = {mejor_fitness:.10f}")
+    return grafica_filename
 
-def exportar_estadisticas_excel_elitismo(estadisticas, directorio, num_generaciones, elite_size, mejor_info):
-    """Exporta estadísticas de elitismo a archivo Excel"""
-    filename = f"{directorio}/estadisticas_elitismo_completas.xlsx"
+def exportar_estadisticas_excel_completo(estadisticas, directorio, num_generaciones, elite_size, mejor_info):
+    """Exporta todas las estadísticas y resultados a un archivo Excel completo"""
+    filename = f"{directorio}/resultados_completos_ruleta_elitismo.xlsx"
     
     with pd.ExcelWriter(filename, engine='openpyxl') as writer:
-        # Hoja de estadísticas por generación
+        # Hoja 1: Estadísticas por generación
         estadisticas_df = pd.DataFrame(estadisticas)
-        estadisticas_df.to_excel(writer, sheet_name='Estadisticas_Elitismo', index=False)
+        estadisticas_df.to_excel(writer, sheet_name='Estadisticas_Generacion', index=False)
         
-        # Hoja de resumen
-        resumen_df = pd.DataFrame([{
-            'Generaciones': num_generaciones,
-            'Elite_Size': elite_size,
-            'Mejor_Fitness_Final': estadisticas['mejor_fitness'][-1],
-            'Peor_Fitness_Final': estadisticas['peor_fitness'][-1],
-            'Fitness_Promedio_Final': estadisticas['fitness_promedio'][-1],
-            'Mejor_Fitness_Global': mejor_info['mejor_fitness'],
-            'Mejor_Generacion_Global': mejor_info['mejor_generacion'],
+        # Hoja 2: Mejor cromosoma y resultados principales
+        mejor_cromosoma_df = pd.DataFrame([{
+            'Generacion_Mejor': mejor_info['mejor_generacion'],
+            'Mejor_Fitness': mejor_info['mejor_fitness'],
             'Mejor_Valor_Decimal': mejor_info['mejor_valor'],
-            'Mejor_Cromosoma': ''.join(map(str, mejor_info['mejor_cromosoma']))
+            'Mejor_Valor_Normalizado': mejor_info['mejor_valor'] / COEF,
+            'Mejor_Cromosoma_Binario': ''.join(map(str, mejor_info['mejor_cromosoma'])),
+            'Fitness_Final': estadisticas['mejor_fitness'][-1],
+            'Generaciones_Ejecutadas': num_generaciones
         }])
-        resumen_df.to_excel(writer, sheet_name='Resumen_Elitismo', index=False)
+        mejor_cromosoma_df.to_excel(writer, sheet_name='Mejor_Cromosoma', index=False)
         
-        # Hoja de parámetros utilizados
-        parametros_df = pd.DataFrame([{
-            'Parametro': 'Numero_Cromosomas',
-            'Valor': NUM_CROMOSOMAS
+        # Hoja 3: Resumen ejecutivo
+        resumen_df = pd.DataFrame([{
+            'Parametro': 'Generaciones_Ejecutadas',
+            'Valor': num_generaciones
         }, {
             'Parametro': 'Elite_Size',
             'Valor': elite_size
         }, {
+            'Parametro': 'Mejor_Fitness_Final',
+            'Valor': estadisticas['mejor_fitness'][-1]
+        }, {
+            'Parametro': 'Peor_Fitness_Final',
+            'Valor': estadisticas['peor_fitness'][-1]
+        }, {
+            'Parametro': 'Fitness_Promedio_Final',
+            'Valor': estadisticas['fitness_promedio'][-1]
+        }, {
+            'Parametro': 'Mejor_Fitness_Global',
+            'Valor': mejor_info['mejor_fitness']
+        }, {
+            'Parametro': 'Mejor_Generacion_Global',
+            'Valor': mejor_info['mejor_generacion']
+        }])
+        resumen_df.to_excel(writer, sheet_name='Resumen_Ejecutivo', index=False)
+        
+        # Hoja 4: Parámetros del algoritmo
+        parametros_df = pd.DataFrame([{
+            'Parametro': 'Numero_Cromosomas',
+            'Valor': NUM_CROMOSOMAS,
+            'Descripcion': 'Tamaño de la población'
+        }, {
+            'Parametro': 'Elite_Size',
+            'Valor': elite_size,
+            'Descripcion': 'Individuos que pasan sin modificación'
+        }, {
             'Parametro': 'Longitud_Cromosoma',
-            'Valor': LONGITUD
+            'Valor': LONGITUD,
+            'Descripcion': 'Bits por cromosoma'
         }, {
             'Parametro': 'Probabilidad_Crossover',
-            'Valor': PROBABILIDAD_CROSSOVER
+            'Valor': PROBABILIDAD_CROSSOVER,
+            'Descripcion': 'Probabilidad de cruzamiento'
         }, {
             'Parametro': 'Probabilidad_Mutacion',
-            'Valor': PROBABILIDAD_MUTACION
+            'Valor': PROBABILIDAD_MUTACION,
+            'Descripcion': 'Probabilidad de mutación por bit'
         }, {
             'Parametro': 'Coeficiente',
-            'Valor': COEF
+            'Valor': COEF,
+            'Descripcion': 'Coeficiente de normalización (2^30-1)'
         }, {
             'Parametro': 'Funcion_Objetivo',
-            'Valor': 'f(x) = (x/coef)²'
+            'Valor': 'f(x) = (x/coef)²',
+            'Descripcion': 'Función a maximizar'
         }, {
             'Parametro': 'Metodo_Seleccion',
-            'Valor': 'Elitismo + Ruleta'
+            'Valor': 'Elitismo + Ruleta',
+            'Descripcion': 'Estrategia de selección'
         }, {
             'Parametro': 'Metodo_Crossover',
-            'Valor': '1 Punto'
-        }, {
-            'Parametro': 'Estrategia',
-            'Valor': f'Elitismo (top {elite_size}) + Evolución resto'
+            'Valor': '1 Punto',
+            'Descripcion': 'Tipo de cruzamiento'
         }])
-        parametros_df.to_excel(writer, sheet_name='Parametros', index=False)
+        parametros_df.to_excel(writer, sheet_name='Parametros_Algoritmo', index=False)
     
     print(f"✓ Archivo Excel completo exportado a: {filename}")
+    return filename
+    
 
 def main():
-    """
-    Función principal que ejecuta el algoritmo genético con elitismo.
+    """Función principal que ejecuta el algoritmo genético con elitismo."""
     
-    Configuración fija:
-    - 100 generaciones
-    - Élite de 2 individuos
-    - Mismos parámetros que Parte A
-    """
-    print(f"{'#'*100}")
-    print(f"ALGORITMO GENÉTICO CON ELITISMO - PARTE C")
-    print(f"{'#'*100}")
-    
-    # Configuración para Parte C
-    num_generaciones = 100
-    elite_size = ELITE_SIZE
+    # Resumen inicial de parámetros
+    print("="*80)
+    print("ALGORITMO GENÉTICO CON SELECCIÓN POR RULETA-ELITISMO")
+    print("="*80)
+    print(f"Parámetros:")
+    print(f"  • Población: {NUM_CROMOSOMAS} cromosomas")
+    print(f"  • Élite: {ELITE_SIZE} individuos")
+    print(f"  • Generaciones: {NUM_GENERACIONES}")
+    print(f"  • Longitud cromosoma: {LONGITUD} bits")
+    print(f"  • Prob. crossover: {PROBABILIDAD_CROSSOVER}")
+    print(f"  • Prob. mutación: {PROBABILIDAD_MUTACION}")
+    print(f"  • Función objetivo: f(x) = (x/{COEF})²")
+    print("="*80)
     
     # Crear directorio para resultados
     directorio = crear_directorio_resultados()
-    print(f"📁 Resultados se guardarán en: {directorio}")
     
-    print(f"\n🚀 Iniciando ejecución con elitismo...")
-    print(f"   - Generaciones: {num_generaciones}")
-    print(f"   - Tamaño élite: {elite_size}")
-    print(f"   - Población total: {NUM_CROMOSOMAS}")
+    # Ejecutar algoritmo genético
+    num_generaciones = NUM_GENERACIONES
+    elite_size = ELITE_SIZE
     
-    # Ejecutar algoritmo con elitismo
     estadisticas, mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion = ejecutar_algoritmo_genetico_elitismo(
         num_generaciones, elite_size
     )
     
-    # Mostrar tabla de estadísticas
-    mostrar_tabla_estadisticas(estadisticas, num_generaciones)
+    # Generar gráficas
+    grafica_filename = generar_graficas_elitismo(estadisticas, num_generaciones, directorio, elite_size)
     
-    # Mostrar mejor cromosoma
-    mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion)
-    
-    # Exportar estadísticas a CSV
+    # Exportar archivo Excel completo
     mejor_cromosoma_info = {
         'mejor_fitness': mejor_fitness,
         'mejor_cromosoma': mejor_cromosoma,
         'mejor_valor': mejor_valor,
         'mejor_generacion': mejor_generacion
     }
-    exportar_estadisticas_csv(estadisticas, num_generaciones, directorio, mejor_cromosoma_info, elite_size)
     
-    # Generar y guardar gráficas
-    print(f"\nGenerando gráficas para {num_generaciones} generaciones con elitismo...")
-    generar_graficas_elitismo(estadisticas, num_generaciones, directorio, elite_size)
+    excel_filename = exportar_estadisticas_excel_completo(
+        estadisticas, directorio, num_generaciones, elite_size, mejor_cromosoma_info
+    )
     
-    # Exportar archivo Excel completo
-    print(f"\n{'='*80}")
-    print("EXPORTANDO ARCHIVO EXCEL COMPLETO")
+    # Mostrar solo resultados finales esenciales
+    print("\nRESULTADOS FINALES:")
     print("="*80)
-    exportar_estadisticas_excel_elitismo(estadisticas, directorio, num_generaciones, elite_size, mejor_cromosoma_info)
-    
-    print(f"\n🎉 PROCESO COMPLETADO - PARTE C (ELITISMO)")
-    print(f"📊 Todos los archivos de resultados están en: {directorio}")
-    print(f"   - Archivos CSV con estadísticas y mejor cromosoma")
-    print(f"   - Archivo Excel completo con todas las estadísticas")
-    print(f"   - Gráficas en formato PNG")
-    print(f"\n💡 ELITISMO APLICADO:")
-    print(f"   - {elite_size} mejores cromosomas pasan directamente cada generación")
-    print(f"   - {NUM_CROMOSOMAS - elite_size} cromosomas generados por evolución (ruleta + crossover + mutación)")
+    print(f"Generación del mejor fitness: {mejor_generacion}")
+    print(f"  • Mejor fitness alcanzado: {mejor_fitness:.10f}")
+    print(f"  • Cromosoma binario: {''.join(map(str, mejor_cromosoma))}")
+    print(f"  • Valor decimal: {mejor_valor}")
+    print("="*80)
+    print(f"  • Archivo Excel generado: {excel_filename}")
+    print(f"  • Gráficas guardadas en: {grafica_filename}")
+    print("="*80)
 
-if __name__ == "__main__":
-    # Ejecutar
-    main()
-    
-    # Para ejecutar solo una prueba específica (descomentar si es necesario):
-    # directorio = crear_directorio_resultados()
-    # estadisticas, mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion = ejecutar_algoritmo_genetico_elitismo(100, 2)
-    # mostrar_tabla_estadisticas(estadisticas, 100)
-    # mostrar_mejor_cromosoma(mejor_fitness, mejor_cromosoma, mejor_valor, mejor_generacion)
-    # mejor_cromosoma_info = {'mejor_fitness': mejor_fitness, 'mejor_cromosoma': mejor_cromosoma, 'mejor_valor': mejor_valor, 'mejor_generacion': mejor_generacion}
-    # exportar_estadisticas_csv(estadisticas, 100, directorio, mejor_cromosoma_info, 2)
-    # generar_graficas_elitismo(estadisticas, 100, directorio, 2)
+main()
