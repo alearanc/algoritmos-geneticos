@@ -11,6 +11,7 @@ PROBABILIDAD_CROSSOVER = 0.75
 PROBABILIDAD_MUTACION = 0.05
 
 def generar_poblacion(n, longitud):
+    """Genera población inicial de n cromosomas binarios de longitud especificada"""
     poblacion = []
     for _ in range(n):
         cromosoma = [random.randint(0, 1) for _ in range(longitud)]
@@ -18,17 +19,21 @@ def generar_poblacion(n, longitud):
     return poblacion
 
 def binario_a_entero(cromosoma):
+    """Convierte cromosoma binario a valor entero"""
     return sum(gen * (2 ** (LONGITUD - 1 - i)) for i, gen in enumerate(cromosoma))
 
 def evaluar_funcion_objetivo(valor):
+    """Evalúa la función objetivo f(x) = (x/coef)²"""
     return (valor / COEF) ** 2
 
 def calcular_fitness(valores_f_obj):
+    """Calcula fitness normalizado (proporcional) de cada individuo"""
     total = sum(valores_f_obj)
     fitness = [y / total for y in valores_f_obj]
     return fitness
 
 def calcular_prob_acumuladas(fitness_valores):
+    """Calcula probabilidades acumuladas para selección por ruleta"""
     prob_acumuladas = []
     acumulada = 0
     for fitness in fitness_valores:
@@ -37,6 +42,7 @@ def calcular_prob_acumuladas(fitness_valores):
     return prob_acumuladas
 
 def ruleta_seleccion(prob_acumuladas):
+    """Selección por ruleta: devuelve índice del cromosoma seleccionado"""
     r = random.random() #Nro. aleatorio entre 0 y 1
     for indice, acumulada in enumerate(prob_acumuladas):
         if r <= acumulada:
@@ -44,6 +50,7 @@ def ruleta_seleccion(prob_acumuladas):
     return len(prob_acumuladas) - 1   
 
 def crossover(padre1, padre2, probabilidad):
+    """Crossover de 1 punto entre dos padres"""
     r = random.random()
     if r < probabilidad:
         punto_corte = random.randint(1, len(padre1) - 1)
@@ -54,6 +61,7 @@ def crossover(padre1, padre2, probabilidad):
         return padre1[:], padre2[:], False, None
 
 def mutacion(hijo1, hijo2, probabilidad):
+    """Mutación en ambos hijos"""
     hubo_mutacion = False
     hijo1_copia = hijo1[:]
     hijo2_copia = hijo2[:]
@@ -74,6 +82,7 @@ def mutacion(hijo1, hijo2, probabilidad):
     return hijo1_copia, hijo2_copia, hubo_mutacion
 
 def obtener_estadisticas_poblacion(poblacion):
+    """Calcula estadísticas de fitness de la población actual"""
     enteros = [binario_a_entero(x) for x in poblacion]
     f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
 
@@ -94,6 +103,7 @@ def obtener_estadisticas_poblacion(poblacion):
     }
 
 def evolucionar_generacion(poblacion):
+    """Evoluciona una generación"""
     enteros = [binario_a_entero(x) for x in poblacion]
     f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
     fitness_valores = calcular_fitness(f_obj)
@@ -118,6 +128,7 @@ def evolucionar_generacion(poblacion):
     return nueva_poblacion
 
 def ejecutar_algoritmo_genetico(num_generaciones):
+    """Ejecuta el algoritmo genético para N generaciones"""
     # Inicializa población
     poblacion = generar_poblacion(NUM_CROMOSOMAS, LONGITUD)
 

@@ -11,6 +11,7 @@ PROBABILIDAD_CROSSOVER = 0.75
 PROBABILIDAD_MUTACION = 0.05
 
 def generar_poblacion(n, longitud):
+    """Genera población inicial de n cromosomas binarios"""
     poblacion = []
     for _ in range(n):
         cromosoma = [random.randint(0, 1) for _ in range(longitud)]
@@ -18,9 +19,11 @@ def generar_poblacion(n, longitud):
     return poblacion
 
 def binario_a_entero(cromosoma):
+    """Convierte cromosoma binario a entero"""
     return sum(gen * (2 ** (LONGITUD - 1 - i)) for i, gen in enumerate(cromosoma))
 
 def evaluar_funcion_objetivo(valor):
+    """Función objetivo: f(x) = (x/COEF)²"""
     return (valor / COEF) ** 2
 
 def torneo_seleccion(poblacion, f_obj, k=2):
@@ -30,6 +33,7 @@ def torneo_seleccion(poblacion, f_obj, k=2):
     return mejor_idx
 
 def crossover(padre1, padre2, probabilidad):
+    """Crossover de un punto"""
     r = random.random()
     if r < probabilidad:
         punto_corte = random.randint(1, len(padre1) - 1)
@@ -52,12 +56,8 @@ def mutacion(cromosoma, probabilidad):
     
     return cromosoma_copia, hubo_mutacion
 
-def obtener_mejor_individuo(poblacion, f_obj):
-    """Obtiene el mejor individuo de la población (para estadísticas)"""
-    mejor_idx = f_obj.index(max(f_obj))
-    return poblacion[mejor_idx][:], f_obj[mejor_idx], mejor_idx
-
 def obtener_estadisticas_poblacion(poblacion):
+    """Calcula estadísticas de fitness de la población actual"""
     enteros = [binario_a_entero(x) for x in poblacion]
     f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
 
@@ -78,6 +78,7 @@ def obtener_estadisticas_poblacion(poblacion):
     }
 
 def evolucionar_generacion(poblacion):
+    """Evoluciona una generación de la población"""
     enteros = [binario_a_entero(x) for x in poblacion]
     f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
 

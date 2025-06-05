@@ -84,9 +84,7 @@ def mutacion(hijo1, hijo2, probabilidad):
     return hijo1_copia, hijo2_copia, hubo_mutacion
 
 def seleccionar_elite(poblacion, elite_size):
-    """
-    Selecciona los mejores cromosomas (élite) basado en su fitness
-    """
+    """Selecciona los mejores cromosomas (élite) basado en su fitness"""
     # Calcular fitness de toda la población
     enteros = [binario_a_entero(x) for x in poblacion]
     f_obj = [evaluar_funcion_objetivo(x) for x in enteros]
@@ -126,7 +124,7 @@ def obtener_estadisticas_poblacion(poblacion):
     }
 
 def evolucionar_generacion_con_elitismo(poblacion, elite_size):
-    """Evoluciona una generación aplicando elitismo."""
+    """Evoluciona una generación aplicando elitismo"""
     # Paso 1: Seleccionar élite
     elite, indices_elite = seleccionar_elite(poblacion, elite_size)
     
@@ -178,7 +176,7 @@ def evolucionar_generacion_con_elitismo(poblacion, elite_size):
     return nueva_poblacion
 
 def ejecutar_algoritmo_genetico_elitismo(num_generaciones, elite_size):
-    """Ejecuta el algoritmo genético con elitismo por N generaciones"""
+    """Ejecuta el algoritmo genético con elitismo para N generaciones"""
     # Inicializa población
     poblacion = generar_poblacion(NUM_CROMOSOMAS, LONGITUD)
 
@@ -379,8 +377,7 @@ def exportar_estadisticas_excel_completo(estadisticas, directorio, num_generacio
     
 
 def main():
-    """Función principal que ejecuta el algoritmo genético con elitismo."""
-    
+    """Función principal que ejecuta el algoritmo genético con elitismo"""  
     # Resumen inicial de parámetros
     print("="*80)
     print("ALGORITMO GENÉTICO CON SELECCIÓN POR RULETA-ELITISMO")

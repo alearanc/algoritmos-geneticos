@@ -59,7 +59,7 @@ def mutacion(cromosoma, probabilidad):
 
 def obtener_mejores_individuos(poblacion, f_obj, num_elites):
     """
-    Obtiene los mejores 'num_elites' individuos de la población (para elitismo múltiple)
+    Obtiene los mejores 'num_elites' individuos de la población
     Retorna lista de tuplas (cromosoma_copia, fitness, índice_original)
     """
     # Crear lista de índices ordenados por fitness (descendente)
@@ -100,7 +100,7 @@ def obtener_estadisticas_poblacion(poblacion):
 
 def evolucionar_generacion(poblacion):
     """
-    Evoluciona una generación usando elitismo múltiple
+    Evoluciona una generación usando elitismo
     - Conserva los NUM_ELITES mejores individuos sin alteraciones
     - Genera el resto (NUM_CROMOSOMAS - NUM_ELITES) mediante selección, crossover y mutación
     """
